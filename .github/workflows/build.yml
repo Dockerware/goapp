@@ -1,0 +1,33 @@
+name: build
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+  pull_request:
+
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.platform.on }}
+    name: Go${{ matrix.go }} ${{ matrix.platform.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        go:
+          - 1.13.10
+          - 1.14.2
+        platform:
+          - { on: ubuntu-18.04, name: linux }
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: docker login
+        run: echo ${{ secrets.DOCKER_PASS }} | docker login docker.pkg.github.com --username ${{ secrets.DOCKER_USER }} --password-stdin
+
+      - name: build and push image
+        run: make push PLATFORM=${{ matrix.platform.name }} GO_VERSION=${{ matrix.go }}

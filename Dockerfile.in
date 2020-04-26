@@ -1,0 +1,102 @@
+FROM openjdk:OPENJDK_VERSION-slim-buster
+
+# To enable running android tools such as apt
+RUN apt-get update &&\
+    apt-get -y install \
+    lib32z1 \
+    lib32stdc++6 \
+    unzip \
+    sudo &&\
+    apt-get clean
+
+# For Go
+RUN apt-get update &&\
+    apt-get -y --no-install-recommends install \
+    curl \
+    gcc \
+    ca-certificates \
+    libc6-dev \
+    git &&\
+    apt-get clean
+
+# Add user
+RUN set -o errexit -o nounset &&\
+    echo "Adding gopher user and group" && \
+	groupadd --system --gid 1000 gopher && \
+	useradd --system --gid gopher --uid 1000 --shell /bin/bash --create-home gopher
+RUN echo "gopher:gopher"| chpasswd
+RUN usermod -aG sudo gopher
+RUN echo "gopher ALL=(ALL) NOPASSWD:ALL" | tee -a /etc/sudoers
+ENV GOPHER /home/gopher
+
+
+# Get gradle. We don't actually need to build the app, but we need it to
+# generate the gradle wrapper, since it's not included in the app's repo.
+WORKDIR /usr/local
+RUN set -o errexit -o nounset &&\
+    echo "Downloading Gradle" &&\
+    curl -O "https://downloads.gradle-dn.com/distributions/GRADLE_FILENAME" &&\
+    echo "Checking download hash" &&\
+    echo "GRADLE_CHECKSUM GRADLE_FILENAME" | sha256sum --check &&\
+    echo "Installing Gradle" &&\
+    unzip GRADLE_FILENAME &&\
+    rm GRADLE_FILENAME &&\
+	ln --symbolic /usr/local/gradle-GRADLE_VERSION/bin/gradle /usr/local/bin/gradle
+
+RUN mkdir /home/gopher/.gradle &&\
+    chown gopher:gopher /home/gopher/.gradle
+VOLUME /home/gopher/.gradle
+
+# Get android sdk, ndk, and rest of the stuff needed to build the android app.
+ENV ANDROID_SDK_ROOT /usr/lib/android-sdk
+ENV ANDROID_NDK_HOME $ANDROID_SDK_ROOT/ndk/ANDROID_NDK_VERSION
+ENV PATH $ANDROID_SDK_ROOT/tools/bin:$PATH
+ENV PATH $ANDROID_SDK_ROOT/build-tools/ANDROID_BUILD_TOOLS_VERSION:$PATH
+ENV PATH $ANDROID_SDK_ROOT/platform-tools:$PATH
+RUN set -o errexit -o nounset &&\
+    echo "Downloading ANDROID SDK TOOLS" &&\
+    curl -sO https://dl.google.com/android/repository/ANDROID_SDK_TOOLS_FILENAME &&\
+    echo "Checking download hash" &&\
+    echo 'ANDROID_SDK_TOOLS_CHECKSUM ANDROID_SDK_TOOLS_FILENAME' | sha256sum -c &&\
+    echo "Installing ANDROID SDK TOOLS" &&\
+    unzip -d $ANDROID_SDK_ROOT ANDROID_SDK_TOOLS_FILENAME &&\
+    rm ANDROID_SDK_TOOLS_FILENAME &&\
+    yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses &&\
+    sdkmanager --sdk_root=$ANDROID_SDK_ROOT --update &&\
+    sdkmanager --sdk_root=$ANDROID_SDK_ROOT 'build-tools;ANDROID_BUILD_TOOLS_VERSION' &&\
+    sdkmanager --sdk_root=$ANDROID_SDK_ROOT 'platform-tools' &&\
+    sdkmanager --sdk_root=$ANDROID_SDK_ROOT 'ndk;ANDROID_NDK_VERSION'
+
+# Get Go stable release
+ENV GOROOT /usr/local/go
+RUN set -o errexit -o nounset &&\
+    echo "Downloading GO" &&\
+    curl -O https://storage.googleapis.com/golang/GO_FILENAME &&\
+    echo "Checking download hash" &&\
+    echo 'GO_CHECKSUM  GO_FILENAME' | sha256sum -c  &&\
+    echo "Installing GO" &&\
+    tar -C /usr/local -xzf GO_FILENAME &&\
+    rm GO_FILENAME
+RUN mkdir $GOPHER/go &&\
+    chown gopher:gopher $GOPHER/go
+ENV GOPATH $GOPHER/go
+ENV PATH $GOPATH/bin:$GOROOT/bin:$PATH
+
+USER gopher
+
+# Get gomobile
+RUN go get -v golang.org/x/mobile/cmd/gomobile &&\
+    gomobile init
+
+# Set work dir
+RUN mkdir /app &&\
+    chown gopher:gopher /app
+
+WORKDIR /app
+
+LABEL maintainer="DockerWare.github.io" \
+	  openjdk.version="OPENJDK_VERSION" \
+	  gradle.version="GRADLE_VERSION" \
+	  android.ndk.version="ANDROID_NDK_VERSION" \
+	  android.sdk.tools.version="ANDROID_SDK_TOOLS_VERSION" \
+	  go.version="GO_VERSION"
