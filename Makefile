@@ -26,55 +26,10 @@ TAG ?= $(GO_VERSION)-$(ANDROID_NDK_VERSION)
 DOCKERFILE = Dockerfile.$(PLATFORM)-$(TAG)
 
 
-b: Dockerfile
+build: Dockerfile
 	docker build \
 		--tag $(REPO) \
 		.
 
-push: b
+push: build
 	docker push $(REPO):$(TAG)
-
-.PHONY: say
-say:
-	@echo $(ANDROID_SDK_TOOLS_FILENAME)
-	@echo $(shell < checksum.txt grep ${ANDROID_SDK_TOOLS_FILENAME} | cut -f1)
-
-.PHONY: rebuild
-rebuild: clean build
-
-.PHONY: build
-build: Dockerfile
-	docker build \
-		--force-rm \
-		--tag $(REPO) \
-		--tag $(REPO):$(TAG) .
-
-.PHONY: push
-push-off: build
-	docker push $(REPO):$(TAG)
-
-.PHONY: clean
-clean:
-	rm -f Dockerfile $(DOCKERFILE)
-
-Dockerfile: $(DOCKERFILE)
-	@rm -f Dockerfile
-	ln -s $(DOCKERFILE) $(@)
-
-$(DOCKERFILE): Dockerfile.test
-	m4 \
-		-DOPENJDK_VERSION=$(OPENJDK_VERSION) \
-		-DGO_VERSION=$(GO_VERSION) \
-		-DGO_CHECKSUM=$(shell < checksum.txt grep ${GO_FILENAME} | cut -f1) \
-		-DGO_FILENAME=$(GO_FILENAME) \
-		-DGOMOBILE_VERSION=$(GOMOBILE_VERSION) \
-		-DGRADLE_VERSION=$(GRADLE_VERSION) \
-		-DGRADLE_CHECKSUM=$(shell < checksum.txt grep ${GRADLE_FILENAME} | cut -f1) \
-		-DGRADLE_FILENAME=$(GRADLE_FILENAME) \
-		-DANDROID_SDK_TOOLS_VERSION=$(ANDROID_SDK_TOOLS_VERSION) \
-		-DANDROID_SDK_TOOLS_CHECKSUM=$(shell < checksum.txt grep ${ANDROID_SDK_TOOLS_FILENAME} | cut -f1) \
-		-DANDROID_SDK_TOOLS_FILENAME=$(ANDROID_SDK_TOOLS_FILENAME) \
-		-DANDROID_COMPILE_SDK_VERSION=$(ANDROID_COMPILE_SDK_VERSION) \
-		-DANDROID_BUILD_TOOLS_VERSION=$(ANDROID_BUILD_TOOLS_VERSION) \
-		-DANDROID_NDK_VERSION=$(ANDROID_NDK_VERSION) \
-		Dockerfile.test > $(@)
