@@ -22,14 +22,14 @@ ANDROID_COMPILE_SDK_VERSION ?= 29
 ANDROID_BUILD_TOOLS_VERSION ?= 29.0.3
 ANDROID_NDK_VERSION ?= 21.1.6352462 # r21b
 
-TAG ?= $(GO_VERSION)-$(ANDROID_NDK_VERSION)
+TAG ?= $(PLATFORM)
 DOCKERFILE = Dockerfile.$(PLATFORM)-$(TAG)
 
 
 build: Dockerfile
 	docker build \
-		--tag $(REPO) \
+		--tag $(REPO):$(TAG) \
 		.
 
 push: build
-	docker push $(REPO)
+	docker push $(REPO):$(TAG)
