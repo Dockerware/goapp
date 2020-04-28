@@ -1,3 +1,4 @@
+SHELL = /bin/bash -o pipefail
 .SUFFIXES:
 .PHONY: all
 all: build push
