@@ -32,4 +32,4 @@ build: Dockerfile
 		.
 
 push: build
-	docker push $(REPO):$(TAG)
+	docker push $(REPO)
