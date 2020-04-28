@@ -2,8 +2,7 @@
 .PHONY: all
 all: build push
 
-REPO ?= docker.pkg.github.com/dockerware/goapp/go-ndk
-
+REPO ?= docker.pkg.github.com/dockerware/goapp/test
 
 PLATFORM ?= linux
 ARCH ?= amd64
@@ -25,6 +24,11 @@ ANDROID_NDK_VERSION ?= 21.1.6352462 # r21b
 
 TAG ?= $(GO_VERSION)-$(ANDROID_NDK_VERSION)
 DOCKERFILE = Dockerfile.$(PLATFORM)-$(TAG)
+
+.PHONY: say
+say:
+	@echo $(ANDROID_SDK_TOOLS_FILENAME)
+	@echo $(shell < checksum.txt grep ${ANDROID_SDK_TOOLS_FILENAME} | cut -f1)
 
 .PHONY: rebuild
 rebuild: clean build
@@ -48,7 +52,7 @@ Dockerfile: $(DOCKERFILE)
 	@rm -f Dockerfile
 	ln -s $(DOCKERFILE) $(@)
 
-$(DOCKERFILE): Dockerfile.in
+$(DOCKERFILE): Dockerfile.test
 	m4 \
 		-DOPENJDK_VERSION=$(OPENJDK_VERSION) \
 		-DGO_VERSION=$(GO_VERSION) \
@@ -64,4 +68,4 @@ $(DOCKERFILE): Dockerfile.in
 		-DANDROID_COMPILE_SDK_VERSION=$(ANDROID_COMPILE_SDK_VERSION) \
 		-DANDROID_BUILD_TOOLS_VERSION=$(ANDROID_BUILD_TOOLS_VERSION) \
 		-DANDROID_NDK_VERSION=$(ANDROID_NDK_VERSION) \
-		Dockerfile.in > $(@)
+		Dockerfile.test > $(@)
