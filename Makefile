@@ -25,6 +25,15 @@ ANDROID_NDK_VERSION ?= 21.1.6352462 # r21b
 TAG ?= $(GO_VERSION)-$(ANDROID_NDK_VERSION)
 DOCKERFILE = Dockerfile.$(PLATFORM)-$(TAG)
 
+
+b: Dockerfile
+	docker build \
+		--tag $(REPO) \
+		.
+
+push: b
+	docker push $(REPO):$(TAG)
+
 .PHONY: say
 say:
 	@echo $(ANDROID_SDK_TOOLS_FILENAME)
@@ -41,7 +50,7 @@ build: Dockerfile
 		--tag $(REPO):$(TAG) .
 
 .PHONY: push
-push: build
+push-off: build
 	docker push $(REPO):$(TAG)
 
 .PHONY: clean
