@@ -1,9 +1,9 @@
+SHELL = /bin/bash -o pipefail
 .SUFFIXES:
 .PHONY: all
 all: build push
 
-REPO ?= docker.pkg.github.com/dockerware/goapp/go-ndk
-
+REPO ?= docker.pkg.github.com/dockerware/goapp/test
 
 PLATFORM ?= linux
 ARCH ?= amd64
@@ -23,45 +23,14 @@ ANDROID_COMPILE_SDK_VERSION ?= 29
 ANDROID_BUILD_TOOLS_VERSION ?= 29.0.3
 ANDROID_NDK_VERSION ?= 21.1.6352462 # r21b
 
-TAG ?= $(GO_VERSION)-$(ANDROID_NDK_VERSION)
+TAG ?= $(PLATFORM)
 DOCKERFILE = Dockerfile.$(PLATFORM)-$(TAG)
 
-.PHONY: rebuild
-rebuild: clean build
 
-.PHONY: build
 build: Dockerfile
 	docker build \
-		--force-rm \
-		--tag $(REPO) \
-		--tag $(REPO):$(TAG) .
+		--tag $(REPO):$(TAG) \
+		.
 
-.PHONY: push
 push: build
 	docker push $(REPO):$(TAG)
-
-.PHONY: clean
-clean:
-	rm -f Dockerfile $(DOCKERFILE)
-
-Dockerfile: $(DOCKERFILE)
-	@rm -f Dockerfile
-	ln -s $(DOCKERFILE) $(@)
-
-$(DOCKERFILE): Dockerfile.in
-	m4 \
-		-DOPENJDK_VERSION=$(OPENJDK_VERSION) \
-		-DGO_VERSION=$(GO_VERSION) \
-		-DGO_CHECKSUM=$(shell < checksum.txt grep ${GO_FILENAME} | cut -f1) \
-		-DGO_FILENAME=$(GO_FILENAME) \
-		-DGOMOBILE_VERSION=$(GOMOBILE_VERSION) \
-		-DGRADLE_VERSION=$(GRADLE_VERSION) \
-		-DGRADLE_CHECKSUM=$(shell < checksum.txt grep ${GRADLE_FILENAME} | cut -f1) \
-		-DGRADLE_FILENAME=$(GRADLE_FILENAME) \
-		-DANDROID_SDK_TOOLS_VERSION=$(ANDROID_SDK_TOOLS_VERSION) \
-		-DANDROID_SDK_TOOLS_CHECKSUM=$(shell < checksum.txt grep ${ANDROID_SDK_TOOLS_FILENAME} | cut -f1) \
-		-DANDROID_SDK_TOOLS_FILENAME=$(ANDROID_SDK_TOOLS_FILENAME) \
-		-DANDROID_COMPILE_SDK_VERSION=$(ANDROID_COMPILE_SDK_VERSION) \
-		-DANDROID_BUILD_TOOLS_VERSION=$(ANDROID_BUILD_TOOLS_VERSION) \
-		-DANDROID_NDK_VERSION=$(ANDROID_NDK_VERSION) \
-		Dockerfile.in > $(@)

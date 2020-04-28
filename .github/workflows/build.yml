@@ -4,10 +4,9 @@ on:
   push:
     branches:
       - master
-    tags:
-      - '*'
   pull_request:
-
+    branches:
+      - master
 
 jobs:
   build:
@@ -18,10 +17,10 @@ jobs:
       fail-fast: false
       matrix:
         go:
-          - 1.13.10
           - 1.14.2
         platform:
           - { on: ubuntu-18.04, name: linux }
+          - { on: windows-2019, name: win }
 
     steps:
       - uses: actions/checkout@v2
