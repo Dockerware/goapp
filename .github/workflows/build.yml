@@ -17,7 +17,6 @@ jobs:
       fail-fast: false
       matrix:
         go:
-          - 1.13.10
           - 1.14.2
         platform:
           - { on: ubuntu-18.04, name: linux }
