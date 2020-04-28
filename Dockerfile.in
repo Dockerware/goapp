@@ -82,17 +82,17 @@ RUN mkdir $GOPHER/go &&\
 ENV GOPATH $GOPHER/go
 ENV PATH $GOPATH/bin:$GOROOT/bin:$PATH
 
+# Set work dir
+RUN mkdir /app &&\
+    chown gopher:gopher /app
+VOLUME /app
+WORKDIR /app
+
 USER gopher
 
 # Get gomobile
 RUN go get -v golang.org/x/mobile/cmd/gomobile &&\
     gomobile init
-
-# Set work dir
-RUN mkdir /app &&\
-    chown gopher:gopher /app
-
-WORKDIR /app
 
 LABEL maintainer="DockerWare.github.io" \
 	  openjdk.version="OPENJDK_VERSION" \
